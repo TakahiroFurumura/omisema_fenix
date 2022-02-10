@@ -6,6 +6,7 @@
 
 package org.mozilla.fenix.ui.robots
 
+import androidx.compose.ui.test.hasText
 import androidx.recyclerview.widget.RecyclerView
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.swipeDown
@@ -16,6 +17,7 @@ import androidx.test.espresso.matcher.RootMatchers
 import androidx.test.espresso.matcher.ViewMatchers
 import androidx.test.espresso.matcher.ViewMatchers.Visibility
 import androidx.test.espresso.matcher.ViewMatchers.hasDescendant
+import androidx.test.espresso.matcher.ViewMatchers.hasSibling
 import androidx.test.espresso.matcher.ViewMatchers.isChecked
 import androidx.test.espresso.matcher.ViewMatchers.isCompletelyDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
@@ -112,6 +114,17 @@ class ThreeDotMenuMainRobot {
         onView(withId(R.id.share_tab_title)).check(matches(isDisplayed()))
         onView(withId(R.id.share_tab_favicon)).check(matches(isDisplayed()))
         onView(withId(R.id.share_tab_url)).check(matches(isDisplayed()))
+    }
+
+    fun openAddonsSubList() {
+        // when there are add-ons installed, there is an overflow Add-ons sub-menu
+        // in that case we use this method instead or before openAddonsManagerMenu()
+        clickAddonsManagerButton()
+    }
+
+    fun verifyAddonCounterBadge(addonName: String) {
+        onView(allOf(withId(R.id.badge_text), hasSibling(withText(addonName))))
+            .check(matches(isDisplayed()))
     }
 
     class Transition {
@@ -329,9 +342,6 @@ class ThreeDotMenuMainRobot {
 
         fun openAddonsManagerMenu(interact: SettingsSubMenuAddonsManagerRobot.() -> Unit): SettingsSubMenuAddonsManagerRobot.Transition {
             clickAddonsManagerButton()
-            mDevice.findObject(
-                UiSelector().text("Recommended")
-            ).waitForExists(waitingTime)
 
             SettingsSubMenuAddonsManagerRobot().interact()
             return SettingsSubMenuAddonsManagerRobot.Transition()

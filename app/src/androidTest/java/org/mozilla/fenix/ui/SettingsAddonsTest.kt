@@ -12,11 +12,15 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.mozilla.fenix.R
+import org.mozilla.fenix.customannotations.SmokeTest
+import org.mozilla.fenix.ext.settings
 import org.mozilla.fenix.helpers.AndroidAssetDispatcher
 import org.mozilla.fenix.helpers.HomeActivityTestRule
 import org.mozilla.fenix.helpers.RecyclerViewIdlingResource
 import org.mozilla.fenix.helpers.TestAssetHelper
+import org.mozilla.fenix.helpers.TestHelper.exitMenu
 import org.mozilla.fenix.helpers.ViewVisibilityIdlingResource
+import org.mozilla.fenix.ui.robots.addonsMenu
 import org.mozilla.fenix.ui.robots.homeScreen
 import org.mozilla.fenix.ui.robots.navigationToolbar
 
@@ -72,14 +76,12 @@ class SettingsAddonsTest {
         }
     }
 
-    // Opens a webpage and installs an add-on from the three-dot menu
+    // Installs an add-on from the Add-ons menu
     @Test
-    fun installAddonFromThreeDotMenu() {
-        val defaultWebPage = TestAssetHelper.getGenericAsset(mockWebServer, 1)
+    fun installAddonTest() {
         val addonName = "uBlock Origin"
 
-        navigationToolbar {}
-            .enterURLAndEnterToBrowser(defaultWebPage.url) {}
+        homeScreen {}
             .openThreeDotMenu {}
             .openAddonsManagerMenu {
                 addonsListIdlingResource =
@@ -89,12 +91,13 @@ class SettingsAddonsTest {
                     )
                 IdlingRegistry.getInstance().register(addonsListIdlingResource!!)
                 clickInstallAddon(addonName)
-                verifyAddonPrompt(addonName)
+                verifyAddonPermissionPrompt(addonName)
                 cancelInstallAddon()
                 clickInstallAddon(addonName)
-                acceptInstallAddon()
-
-                verifyDownloadAddonPrompt(addonName, activityTestRule)
+                acceptPermissionToInstallAddon()
+                closeAddonInstallCompletePrompt(addonName, activityTestRule)
+                verifyAddonIsInstalled(addonName)
+                verifyEnabledTitleDisplayed()
             }
     }
 
@@ -103,18 +106,9 @@ class SettingsAddonsTest {
     fun verifyAddonsCanBeUninstalled() {
         val addonName = "uBlock Origin"
 
-        homeScreen {
-        }.openThreeDotMenu {
-        }.openSettings {
-            verifyAdvancedHeading()
-            verifyAddons()
-        }.openAddonsManagerMenu {
-            addonsListIdlingResource =
-                RecyclerViewIdlingResource(activityTestRule.activity.findViewById(R.id.add_ons_list), 1)
-            IdlingRegistry.getInstance().register(addonsListIdlingResource!!)
-            clickInstallAddon(addonName)
-            acceptInstallAddon()
-            verifyDownloadAddonPrompt(addonName, activityTestRule)
+        addonsMenu {
+            installAddon(addonName)
+            closeAddonInstallCompletePrompt(addonName, activityTestRule)
             IdlingRegistry.getInstance().unregister(addonsListIdlingResource!!)
         }.openDetailedMenuForAddon(addonName) {
             addonContainerIdlingResource = ViewVisibilityIdlingResource(
@@ -123,6 +117,68 @@ class SettingsAddonsTest {
             )
             IdlingRegistry.getInstance().register(addonContainerIdlingResource!!)
         }.removeAddon {
+            verifyAddonCanBeInstalled(addonName)
         }
+    }
+
+    @SmokeTest
+    @Test
+    // Installs uBlock add-on and checks that the app doesn't crash while loading pages with trackers
+    fun noCrashWithAddonInstalledTest() {
+        // setting ETP to Strict mode to test it works with add-ons
+        activityTestRule.activity.settings().setStrictETP()
+
+        val addonName = "uBlock Origin"
+        val trackingProtectionPage =
+            TestAssetHelper.getEnhancedTrackingProtectionAsset(mockWebServer)
+
+        addonsMenu {
+            installAddon(addonName)
+            closeAddonInstallCompletePrompt(addonName, activityTestRule)
+            IdlingRegistry.getInstance().unregister(addonsListIdlingResource!!)
+        }.goBack {
+        }.openNavigationToolbar {
+        }.enterURLAndEnterToBrowser(trackingProtectionPage.url) {
+            verifyPageContent(trackingProtectionPage.content)
+        }
+    }
+
+    @SmokeTest
+    @Test
+    fun useAddonsInPrivateModeTest() {
+        val addonName = "uBlock Origin"
+        val trackingPage = TestAssetHelper.getEnhancedTrackingProtectionAsset(mockWebServer)
+
+        homeScreen {
+        }.togglePrivateBrowsingMode()
+        addonsMenu {
+            installAddon(addonName)
+            selectAllowInPrivateBrowsing(activityTestRule)
+            closeAddonInstallCompletePrompt(addonName, activityTestRule)
+            IdlingRegistry.getInstance().unregister(addonsListIdlingResource!!)
+        }.goBack {}
+        navigationToolbar {
+        }.enterURLAndEnterToBrowser(trackingPage.url) {
+            verifyPageContent(trackingPage.content)
+        }.openThreeDotMenu {
+            openAddonsSubList()
+            verifyAddonCounterBadge(addonName)
+        }
+    }
+
+    private fun installAddon(addonName: String) {
+        homeScreen {
+        }.openThreeDotMenu {
+        }.openAddonsManagerMenu {
+                addonsListIdlingResource =
+                    RecyclerViewIdlingResource(
+                        activityTestRule.activity.findViewById(R.id.add_ons_list),
+                        1
+                    )
+                IdlingRegistry.getInstance().register(addonsListIdlingResource!!)
+                clickInstallAddon(addonName)
+                verifyAddonPermissionPrompt(addonName)
+                acceptPermissionToInstallAddon()
+            }
     }
 }
