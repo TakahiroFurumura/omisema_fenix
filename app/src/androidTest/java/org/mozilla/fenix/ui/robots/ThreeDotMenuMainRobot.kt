@@ -122,8 +122,8 @@ class ThreeDotMenuMainRobot {
         clickAddonsManagerButton()
     }
 
-    fun verifyAddonCounterBadge(addonName: String) {
-        onView(allOf(withId(R.id.badge_text), hasSibling(withText(addonName))))
+    fun verifyAddonAvailableInMainMenu(addonName: String) {
+        onView(withText(addonName))
             .check(matches(isDisplayed()))
     }
 

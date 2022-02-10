@@ -238,6 +238,7 @@ class SettingsSubMenuAddonsManagerRobot {
     }
 
     private fun assertAddonCanBeInstalled(addonName: String) {
+        scrollToElementByText(addonName)
         device.waitNotNull(Until.findObject(By.text(addonName)), waitingTime)
 
         onView(

@@ -76,7 +76,7 @@ class SettingsAddonsTest {
         }
     }
 
-    // Installs an add-on from the Add-ons menu
+    // Installs an add-on from the Add-ons menu and verifies the prompts
     @Test
     fun installAddonTest() {
         val addonName = "uBlock Origin"
@@ -121,27 +121,27 @@ class SettingsAddonsTest {
         }
     }
 
-    @SmokeTest
-    @Test
-    // Installs uBlock add-on and checks that the app doesn't crash while loading pages with trackers
-    fun noCrashWithAddonInstalledTest() {
-        // setting ETP to Strict mode to test it works with add-ons
-        activityTestRule.activity.settings().setStrictETP()
-
-        val addonName = "uBlock Origin"
-        val trackingProtectionPage =
-            TestAssetHelper.getEnhancedTrackingProtectionAsset(mockWebServer)
-
-        addonsMenu {
-            installAddon(addonName)
-            closeAddonInstallCompletePrompt(addonName, activityTestRule)
-            IdlingRegistry.getInstance().unregister(addonsListIdlingResource!!)
-        }.goBack {
-        }.openNavigationToolbar {
-        }.enterURLAndEnterToBrowser(trackingProtectionPage.url) {
-            verifyPageContent(trackingProtectionPage.content)
-        }
-    }
+//    @SmokeTest
+//    @Test
+//    // Installs uBlock add-on and checks that the app doesn't crash while loading pages with trackers
+//    fun noCrashWithAddonInstalledTest() {
+//        // setting ETP to Strict mode to test it works with add-ons
+//        activityTestRule.activity.settings().setStrictETP()
+//
+//        val addonName = "uBlock Origin"
+//        val trackingProtectionPage =
+//            TestAssetHelper.getEnhancedTrackingProtectionAsset(mockWebServer)
+//
+//        addonsMenu {
+//            installAddon(addonName)
+//            closeAddonInstallCompletePrompt(addonName, activityTestRule)
+//            IdlingRegistry.getInstance().unregister(addonsListIdlingResource!!)
+//        }.goBack {
+//        }.openNavigationToolbar {
+//        }.enterURLAndEnterToBrowser(trackingProtectionPage.url) {
+//            verifyPageContent(trackingProtectionPage.content)
+//        }
+//    }
 
     @SmokeTest
     @Test
@@ -162,7 +162,7 @@ class SettingsAddonsTest {
             verifyPageContent(trackingPage.content)
         }.openThreeDotMenu {
             openAddonsSubList()
-            verifyAddonCounterBadge(addonName)
+            verifyAddonAvailableInMainMenu(addonName)
         }
     }
 
